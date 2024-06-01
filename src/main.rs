@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -5,6 +6,27 @@ use rand::prelude::*;
 use rand::seq::SliceRandom;
 
 // use itertools::Itertools;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WordBox {
+    words: Vec<String>,
+}
+
+impl WordBox {
+    pub fn try_new(words: &Vec<String>) -> Option<WordBox> {
+        if is_word_box(words) {
+            return Some(WordBox {
+                words: words.clone(),
+            });
+        }
+        None
+    }
+}
+
+impl Display for WordBox {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.words.join("\n"))
+    }
+}
 
 fn filter_words(filename: &str) -> Vec<String> {
     let file: File = File::open(filename).expect("Could not open file");
@@ -19,9 +41,9 @@ fn filter_words(filename: &str) -> Vec<String> {
         .collect()
 }
 
-fn pick_random_strings<'a>(strings: &'a [&'a str]) -> Vec<&'a str> {
+fn pick_random_strings(strings: &Vec<String>) -> Option<WordBox> {
     let mut rng = thread_rng();
-    strings.choose_multiple(&mut rng, 3).copied().collect()
+    WordBox::try_new(&strings.choose_multiple(&mut rng, 3).cloned().collect())
 }
 /*
 fn is_word_box(words: &[&String]) -> bool {
@@ -129,7 +151,7 @@ fn is_word_box(words: &[&String]) -> bool {
 }
 */
 
-fn is_word_box(words: &[&str]) -> bool {
+fn is_word_box(words: &[String]) -> bool {
     // Check if there are exactly 3 words and each word is exactly 3 characters long
     if words.len() != 3 || !words.iter().all(|word| word.len() == 3) {
         return false;
@@ -149,10 +171,10 @@ fn is_word_box(words: &[&str]) -> bool {
 
 fn main() {
     let words = filter_words("3esl.txt");
-    let four_letter_words: Vec<_> = words
+    let three_letter_words: Vec<_> = words
         .iter()
         .filter(|line| line.len() == 3)
-        .map(|s| s.as_str())
+        .map(|s| s.to_string())
         .collect();
 
     // let valid: Vec<String> = vec!["mill".to_string(), "idea".to_string(), "lead".to_string(), "mend".to_string()];
@@ -160,10 +182,10 @@ fn main() {
 
     // println!("{:#?}, {}", &valid, is_word_box(&valid_word_refs));
 
-    let mut random_words = pick_random_strings(four_letter_words.as_slice());
-    while !is_word_box(&random_words) {
-        random_words = pick_random_strings(four_letter_words.as_slice());
+    let mut random_words = pick_random_strings(&three_letter_words);
+    while random_words.is_none() {
+        random_words = pick_random_strings(&three_letter_words);
     }
 
-    println!("{:#?}", random_words);
+    println!("{}", random_words.unwrap());
 }
