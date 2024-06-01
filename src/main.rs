@@ -41,9 +41,9 @@ fn filter_words(filename: &str) -> Vec<String> {
         .collect()
 }
 
-fn pick_random_strings(strings: &Vec<String>) -> Option<WordBox> {
+fn pick_random_strings(strings: &Vec<String>, len: usize) -> Option<WordBox> {
     let mut rng = thread_rng();
-    WordBox::try_new(&strings.choose_multiple(&mut rng, 3).cloned().collect())
+    WordBox::try_new(&strings.choose_multiple(&mut rng, len).cloned().collect())
 }
 /*
 fn is_word_box(words: &[&String]) -> bool {
@@ -153,13 +153,14 @@ fn is_word_box(words: &[&String]) -> bool {
 
 fn is_word_box(words: &[String]) -> bool {
     // Check if there are exactly 3 words and each word is exactly 3 characters long
-    if words.len() != 3 || !words.iter().all(|word| word.len() == 3) {
+    if !words.iter().all(|word| word.len() == words.len()) {
         return false;
     }
 
     // Check if the grid is symmetric
-    for i in 0..3 {
-        for j in 0..3 {
+    let len = words.len();
+    for i in 0..len {
+        for j in 0..len {
             if words[i].chars().nth(j) != words[j].chars().nth(i) {
                 return false;
             }
@@ -170,10 +171,12 @@ fn is_word_box(words: &[String]) -> bool {
 }
 
 fn main() {
+    let len = 3;
+
     let words = filter_words("3esl.txt");
-    let three_letter_words: Vec<_> = words
+    let box_words: Vec<_> = words
         .iter()
-        .filter(|line| line.len() == 3)
+        .filter(|line| line.len() == len)
         .map(|s| s.to_string())
         .collect();
 
@@ -182,9 +185,9 @@ fn main() {
 
     // println!("{:#?}, {}", &valid, is_word_box(&valid_word_refs));
 
-    let mut random_words = pick_random_strings(&three_letter_words);
+    let mut random_words = pick_random_strings(&box_words, len);
     while random_words.is_none() {
-        random_words = pick_random_strings(&three_letter_words);
+        random_words = pick_random_strings(&box_words, len);
     }
 
     println!("{}", random_words.unwrap());
