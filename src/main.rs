@@ -30,6 +30,7 @@ pub struct Lexicon {
 }
 
 impl Lexicon {
+    /// Get a list of words that start with the given prefix and are of the given length
     fn words_with_prefix(&self, prefix: &String, word_len: usize) -> Vec<String> {
         self.words
             .iter()
@@ -45,6 +46,7 @@ impl Display for Lexicon {
     }
 }
 
+/// Filter out words that contain uppercase letters, punctuation, or whitespace
 fn filter_words(filename: &str) -> Vec<String> {
     let file: File = File::open(filename).expect("Could not open file");
     let reader = BufReader::new(file);
@@ -58,6 +60,8 @@ fn filter_words(filename: &str) -> Vec<String> {
         .collect()
 }
 
+/// Check if the words form a word box
+/// Current check requires that the words are all the same length, and that the grid is symmetric across the diagonal
 fn is_word_box(words: &[String]) -> bool {
     if !words.iter().all(|word| word.len() == words.len()) {
         return false;
@@ -77,7 +81,6 @@ fn is_word_box(words: &[String]) -> bool {
 }
 
 fn solve_word_box(words: &[String], box_size: usize, lexicon: &Lexicon) -> bool {
-    // len = # of words we have right now
     let len = words.len();
 
     if len == box_size {
@@ -107,12 +110,11 @@ fn solve_word_box(words: &[String], box_size: usize, lexicon: &Lexicon) -> bool 
     false
 }
 fn main() {
-    for i in 1..=8 {
+    let words = filter_words("../3esl.txt");
+    let lexicon = Lexicon { words };
+
+    for i in 1..=6 {
         let box_size = i;
-
-        let words = filter_words("../3esl.txt");
-        let lexicon = Lexicon { words };
-
         println!("Solving word box of size {}...", box_size);
         solve_word_box(&[], box_size, &lexicon);
     }
