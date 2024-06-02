@@ -59,7 +59,6 @@ fn filter_words(filename: &str) -> Vec<String> {
 }
 
 fn is_word_box(words: &[String]) -> bool {
-    // Check if there are exactly 3 words and each word is exactly 3 characters long
     if !words.iter().all(|word| word.len() == words.len()) {
         return false;
     }
