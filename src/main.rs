@@ -2,20 +2,16 @@ use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use rand::prelude::*;
-use rand::seq::SliceRandom;
-
-// use itertools::Itertools;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WordBox {
     words: Vec<String>,
 }
 
 impl WordBox {
-    pub fn try_new(words: &Vec<String>) -> Option<WordBox> {
+    pub fn try_new(words: &[String]) -> Option<WordBox> {
         if is_word_box(words) {
             return Some(WordBox {
-                words: words.clone(),
+                words: words.to_owned(),
             });
         }
         None
@@ -34,7 +30,7 @@ pub struct Lexicon {
 }
 
 impl Lexicon {
-    fn words_with_prefix(&self, prefix: &str, word_len: usize) -> Vec<String> {
+    fn words_with_prefix(&self, prefix: &String, word_len: usize) -> Vec<String> {
         self.words
             .iter()
             .filter(|word| word.starts_with(prefix) && word.len() == word_len)
@@ -62,11 +58,6 @@ fn filter_words(filename: &str) -> Vec<String> {
         .collect()
 }
 
-fn pick_random_strings(strings: &Vec<String>, len: usize) -> Option<WordBox> {
-    let mut rng = thread_rng();
-    WordBox::try_new(&strings.choose_multiple(&mut rng, len).cloned().collect())
-}
-
 fn is_word_box(words: &[String]) -> bool {
     // Check if there are exactly 3 words and each word is exactly 3 characters long
     if !words.iter().all(|word| word.len() == words.len()) {
@@ -86,24 +77,44 @@ fn is_word_box(words: &[String]) -> bool {
     true
 }
 
-fn main() {
-    let len = 3;
+fn solve_word_box(words: &[String], box_size: usize, lexicon: &Lexicon) -> bool {
+    // len = # of words we have right now
+    let len = words.len();
 
-    let words: Vec<String> = filter_words("../3esl.txt");
-
-    let box_words: Vec<_> = words
-        .iter()
-        .filter(|line| line.len() == len)
-        .map(|s| s.to_string())
-        .collect();
-
-    let mut random_words = pick_random_strings(&box_words, len);
-    while random_words.is_none() {
-        random_words = pick_random_strings(&box_words, len);
+    if len == box_size {
+        let word_box = WordBox {
+            words: words.to_vec(),
+        };
+        println!("{:}", word_box);
+        return true;
     }
 
-    // println!("{}", random_words.unwrap());
+    let prefix: String = words
+        .iter()
+        .map(|word| word.chars().nth(len).unwrap())
+        .collect();
 
-    let lexicon = Lexicon { words };
-    println!("{:?}", lexicon.words_with_prefix("", 4));
+    let choices = lexicon.words_with_prefix(&prefix, box_size);
+
+    for choice in choices.iter() {
+        let mut new_words = words.to_owned();
+        new_words.push(choice.clone());
+        let result = solve_word_box(&new_words, box_size, lexicon);
+        if result {
+            return true;
+        }
+    }
+
+    false
+}
+fn main() {
+    for i in 1..=8 {
+        let box_size = i;
+
+        let words = filter_words("../3esl.txt");
+        let lexicon = Lexicon { words };
+
+        println!("Solving word box of size {}...", box_size);
+        solve_word_box(&[], box_size, &lexicon);
+    }
 }
