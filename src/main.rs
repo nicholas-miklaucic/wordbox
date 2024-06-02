@@ -180,11 +180,6 @@ fn main() {
         .map(|s| s.to_string())
         .collect();
 
-    // let valid: Vec<String> = vec!["mill".to_string(), "idea".to_string(), "lead".to_string(), "mend".to_string()];
-    // let valid_word_refs: Vec<&String> = valid.iter().collect();
-
-    // println!("{:#?}, {}", &valid, is_word_box(&valid_word_refs));
-
     let mut random_words = pick_random_strings(&box_words, len);
     while random_words.is_none() {
         random_words = pick_random_strings(&box_words, len);
