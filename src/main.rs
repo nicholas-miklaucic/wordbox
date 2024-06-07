@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -32,7 +33,7 @@ impl Display for WordBox {
 
 pub trait Lexicon {
     // some constructor
-    fn initialize(words: Vec<String>) -> Self;
+    fn initialize(words: Vec<String>, lengths: Vec<usize>) -> Self;
 
     // whatever methods you have
     fn words_with_prefix(&self, prefix: &String, word_len: usize) -> Vec<String>;
@@ -45,8 +46,14 @@ pub struct VecLexicon {
 
 impl Lexicon for VecLexicon {
     /// Get a list of words that start with the given prefix and are of the given length
-    fn initialize(words: Vec<String>) -> Self {
-        VecLexicon { words }
+    fn initialize(words: Vec<String>, lengths: Vec<usize>) -> Self {
+        VecLexicon {
+            words: words
+                .iter()
+                .filter(|word| lengths.contains(&word.len()))
+                .cloned()
+                .collect(),
+        }
     }
 
     fn words_with_prefix(&self, prefix: &String, word_len: usize) -> Vec<String> {
@@ -55,6 +62,21 @@ impl Lexicon for VecLexicon {
             .filter(|word| word.starts_with(prefix) && word.len() == word_len)
             .cloned()
             .collect()
+    }
+}
+
+pub struct HashMapLexicon {
+    words: HashMap<String, Vec<String>>,
+}
+
+impl Lexicon for HashMapLexicon {
+    /// Get a list of words that start with the given prefix and are of the given length
+    fn initialize(words: Vec<String>, lengths: Vec<usize>) -> Self {
+        unimplemented!("")
+    }
+
+    fn words_with_prefix(&self, prefix: &String, word_len: usize) -> Vec<String> {
+        unimplemented!("")
     }
 }
 
@@ -122,6 +144,7 @@ impl WordBox {
         }
     }
 }
+
 fn solve_word_box(wb: WordBox, vec_lexicon: &VecLexicon) -> Option<WordBox> {
     println!("{}", wb);
     if wb.is_done() {
