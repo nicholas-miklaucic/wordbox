@@ -6,3 +6,7 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 itertools = "0.9"
+flamegraph = "0.6.5"
+
+[profile.release]
+debug = true
