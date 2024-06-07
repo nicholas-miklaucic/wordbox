@@ -2,25 +2,43 @@ use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+/// IMPLEMENTATION LIST
+/// - Algorithm for finding asymmetrical square word boxes
+///     - Algorithm for finding rectangular word boxes
+/// Faster algorithmm e.g. A* search
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WordBox {
-    words: Vec<String>,
-}
-
-impl WordBox {
-    pub fn try_new(words: &[String]) -> Option<WordBox> {
-        if is_word_box(words) {
-            return Some(WordBox {
-                words: words.to_owned(),
-            });
-        }
-        None
-    }
+    row_dim: usize,       // number of rows
+    col_dim: usize,       // number of columns
+    rows: Vec<String>,    // the words for each row
+    columns: Vec<String>, // the words for each column
 }
 
 impl Display for WordBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.words.join("\n"))
+        let mut grid: Vec<Vec<char>> = vec![vec!['_'; self.col_dim]; self.row_dim];
+
+        for (i, word) in self.rows.iter().enumerate() {
+            for (j, ch) in word.chars().enumerate() {
+                grid[i][j] = ch;
+            }
+        }
+
+        for (i, word) in self.columns.iter().enumerate() {
+            for (j, ch) in word.chars().enumerate() {
+                grid[j][i] = ch;
+            }
+        }
+
+        for row in &grid {
+            for ch in row {
+                write!(f, "{} ", ch)?;
+            }
+            writeln!(f, "\n")?;
+        }
+
+        Ok(())
     }
 }
 
@@ -62,6 +80,8 @@ fn filter_words(filename: &str) -> Vec<String> {
 
 /// Check if the words form a word box
 /// Current check requires that the words are all the same length, and that the grid is symmetric across the diagonal
+
+/*
 fn is_word_box(words: &[String]) -> bool {
     if !words.iter().all(|word| word.len() == words.len()) {
         return false;
@@ -79,7 +99,8 @@ fn is_word_box(words: &[String]) -> bool {
 
     true
 }
-
+*/
+/*
 fn solve_word_box(words: &[String], box_size: usize, lexicon: &Lexicon) -> bool {
     let len = words.len();
 
@@ -109,13 +130,20 @@ fn solve_word_box(words: &[String], box_size: usize, lexicon: &Lexicon) -> bool 
 
     false
 }
+*/
+
 fn main() {
     let words = filter_words("../3esl.txt");
     let lexicon = Lexicon { words };
 
-    for i in 1..=6 {
-        let box_size = i;
-        println!("Solving word box of size {}...", box_size);
-        solve_word_box(&[], box_size, &lexicon);
-    }
+    let rows: Vec<String> = vec!["ATOM".to_string(), "TAME".to_string()];
+    let cols: Vec<String> = vec!["ATOM".to_string()];
+    let word_box = WordBox {
+        row_dim: 4,
+        col_dim: 4,
+        rows,
+        columns: cols,
+    };
+
+    println!("{:}", word_box);
 }
