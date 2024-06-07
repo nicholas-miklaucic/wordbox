@@ -78,6 +78,65 @@ fn filter_words(filename: &str) -> Vec<String> {
         .collect()
 }
 
+impl WordBox {
+    fn is_done(&self) -> bool {
+        self.rows.len() == self.row_dim && self.columns.len() == self.col_dim
+    }
+
+    fn take_ith_characters(words: &Vec<&String>, i: usize) -> String {
+        words
+            .iter()
+            .map(|word| word.chars().nth(i).unwrap())
+            .collect()
+    }
+
+    fn next_moves(&'b self, lexicon: &'b Lexicon) -> Vec<&'b String> {
+        let mut moves = vec![];
+        let mut rows: Vec<&String> = self.rows.iter().collect();
+        for word in lexicon.words_with_prefix(&"".to_string(), self.col_dim) {
+            rows.push(&word);
+            let mut flag: bool = true;
+            for i in 0..self.col_dim {
+                let prefix = Self::take_ith_characters(&rows, i);
+                let choice = lexicon.words_with_prefix(&prefix, self.col_dim);
+                if choice.is_empty() {
+                    flag = false;
+                    break;
+                }
+            }
+            if flag {
+                moves.push(&word);
+            }
+        }
+        moves
+    }
+
+    fn add_word(&self, word: &String) -> WordBox {
+        let mut rows: Vec<String> = self.rows.clone();
+        rows.push(word.clone());
+        WordBox {
+            row_dim: self.row_dim,
+            col_dim: self.col_dim,
+            rows,
+            columns: self.columns.clone(),
+        }
+    }
+}
+fn solve_word_box(wb: WordBox, lexicon: &Lexicon) -> Option<WordBox> {
+    if wb.is_done() {
+        return Some(wb);
+    }
+    let choices = wb.next_moves(lexicon);
+    // this could probably be done with a fancy functional thingymajig
+    for choice in choices {
+        let sol = solve_word_box(wb.add_word(choice), lexicon);
+        if sol.is_some() {
+            return sol;
+        }
+    }
+    None
+}
+
 /// Check if the words form a word box
 /// Current check requires that the words are all the same length, and that the grid is symmetric across the diagonal
 
@@ -136,14 +195,17 @@ fn main() {
     let words = filter_words("../3esl.txt");
     let lexicon = Lexicon { words };
 
-    let rows: Vec<String> = vec!["ATOM".to_string(), "TAME".to_string()];
-    let cols: Vec<String> = vec!["ATOM".to_string()];
+    let rows: Vec<String> = vec![];
+    let columns: Vec<String> = vec![];
     let word_box = WordBox {
         row_dim: 4,
         col_dim: 4,
         rows,
-        columns: cols,
+        columns,
     };
 
+    println!("{}", lexicon.words.len());
     println!("{:}", word_box);
+
+    // println!("{:?}", solve_word_box(word_box, &lexicon));
 }
