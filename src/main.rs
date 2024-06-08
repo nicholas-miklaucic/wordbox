@@ -4,16 +4,21 @@ use crossterm::{
     terminal::{self, BeginSynchronizedUpdate, EndSynchronizedUpdate},
     ExecutableCommand,
 };
-use std::collections::HashMap;
+use itertools::Itertools;
+use rand::{Rng, SeedableRng};
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{stdout, BufRead, BufReader, Stdout, Write};
+use std::{collections::HashMap, vec};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WordBox {
-    row_dim: usize,    // number of rows
-    col_dim: usize,    // number of columns
-    rows: Vec<String>, // the words for each ROW
+    /// Number of rows.
+    row_dim: usize,
+    /// Number of columns.
+    col_dim: usize,
+    /// The words for each row.
+    rows: Vec<String>,
 }
 
 impl Display for WordBox {
@@ -71,6 +76,7 @@ impl Lexicon for VecLexicon {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct HashMapLexicon {
     words: HashMap<String, Vec<String>>,
 }
@@ -78,11 +84,36 @@ pub struct HashMapLexicon {
 impl Lexicon for HashMapLexicon {
     /// Get a list of words that start with the given prefix and are of the given length
     fn initialize(words: Vec<String>, lengths: Vec<usize>) -> Self {
-        unimplemented!("")
+        let mut words_map: HashMap<String, Vec<String>> = HashMap::new();
+        for word in words {
+            if !lengths.contains(&word.len()) {
+                continue;
+            }
+
+            words_map
+                .entry(String::new())
+                .or_default()
+                .push(word.clone());
+
+            for prefix in word.chars().scan(String::default(), |s, c| {
+                s.push(c);
+                Some(s.clone())
+            }) {
+                words_map.entry(prefix).or_default().push(word.clone());
+            }
+        }
+
+        HashMapLexicon { words: words_map }
     }
 
     fn words_with_prefix(&self, prefix: &String, word_len: usize) -> Vec<String> {
-        unimplemented!("")
+        self.words
+            .get(prefix)
+            .unwrap_or(&vec![])
+            .iter()
+            .filter(|w| w.len() == word_len)
+            .cloned()
+            .collect()
     }
 }
 
@@ -121,23 +152,32 @@ impl WordBox {
     fn next_moves<L: Lexicon>(&self, vec_lexicon: &L) -> Vec<String> {
         let mut moves = vec![];
         let mut rows: Vec<String> = self.rows.clone();
+        let mut rng = rand::rngs::StdRng::seed_from_u64(124 + rows.len() as u64);
         for word in vec_lexicon.words_with_prefix(&"".to_string(), self.col_dim) {
             rows.push(word.clone());
-            let mut flag: bool = true;
+            let mut tot_choices = vec![];
             for i in 0..self.col_dim {
                 let prefix = Self::take_ith_characters(&rows, i);
                 let choice = vec_lexicon.words_with_prefix(&prefix, self.row_dim);
-                if choice.is_empty() {
-                    flag = false;
-                    break;
-                }
-            }
-            if flag {
-                moves.push(word.clone());
+                tot_choices.push(choice.len());
             }
             rows.remove(rows.len() - 1);
+            if tot_choices.contains(&0) {
+                continue;
+            }
+            let heuristic: usize = tot_choices.iter().product();
+            let heuristic = tot_choices.iter().min().unwrap().clone();
+            // let heuristic = 1;
+
+            moves.push((heuristic, rng.gen_range(0..=20), word.clone()));
         }
         moves
+            .iter()
+            .sorted()
+            .rev()
+            .map(|(c, _, w)| w)
+            .cloned()
+            .collect()
     }
 
     fn add_word(&self, word: String) -> WordBox {
@@ -159,8 +199,7 @@ fn print_clear(wb: &WordBox) {
     );
 }
 
-fn solve_word_box(wb: WordBox, vec_lexicon: &VecLexicon) -> Option<WordBox> {
-    execute!(stdout(), terminal::Clear(terminal::ClearType::All));
+fn solve_word_box<L: Lexicon>(wb: WordBox, vec_lexicon: &L) -> Option<WordBox> {
     print_clear(&wb);
     if wb.is_done() {
         return Some(wb);
@@ -176,18 +215,25 @@ fn solve_word_box(wb: WordBox, vec_lexicon: &VecLexicon) -> Option<WordBox> {
     None
 }
 fn main() {
+    /* let lex = HashMapLexicon::initialize(vec![String::from("hello")], vec![5]);
+    println!("{:#?}", lex); */
+    let row_dim = 4;
+    let col_dim = 6;
     let words = filter_words("3esl.txt");
-    let vec_lexicon = VecLexicon { words };
+    // let lexicon: VecLexicon = VecLexicon::initialize(words, vec![row_dim, col_dim]);
+    let lexicon = HashMapLexicon::initialize(words, vec![row_dim, col_dim]);
 
     let rows: Vec<String> = vec![];
     let word_box = WordBox {
-        row_dim: 6,
-        col_dim: 6,
+        row_dim,
+        col_dim,
         rows,
     };
 
-    println!("{}", vec_lexicon.words.len());
-    let word_box_option = solve_word_box(word_box, &vec_lexicon);
+    execute!(stdout(), terminal::Clear(terminal::ClearType::All));
+
+    println!("{}", lexicon.words.len());
+    let word_box_option = solve_word_box(word_box, &lexicon);
 
     match word_box_option {
         Some(word_box) => println!("{}", word_box),
